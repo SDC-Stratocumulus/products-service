@@ -1,0 +1,42 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - webnet
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: sdc
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    volumes:
+        - ./pgadmin:/var/lib/pgadmin
+    ports:
+      - "80"
+    networks:
+      - webnet
+    restart: unless-stopped
+    links:
+      - db:pgsql-server
+  web:
+    build: .
+    ports:
+      - "80:3000"
+    networks:
+      - webnet
+    environment:
+      DB_HOST: db
+    depends_on:
+      - db
+    command: ["./wait-for-it.sh", "db:5432", "--", "node", "./server/index.js"]
+
+networks:
+  webnet:

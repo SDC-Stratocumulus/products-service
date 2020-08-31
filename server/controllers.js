@@ -7,7 +7,7 @@ const {
 
 module.exports = {
   getProductsList: (req, res) => {
-    const params = [req.body, count];
+    const params = [req.body.page || 1];
     return readProductList(params)
       .then((data) => {
         res.status(200).json(data);
@@ -41,6 +41,7 @@ module.exports = {
   },
   getRelated: (req, res) => {
     const id = req.params.product_id;
+    console.log(req.params)
     return readRelated(id)
       .then((data) => {
         res.status(200).json(data);
