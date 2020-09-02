@@ -2,53 +2,56 @@ const {
   readProductList,
   readOneProduct,
   readStyles,
-  readRelated,
+  readRelated
 } = require("./models.js");
 
 module.exports = {
   getProductsList: (req, res) => {
-    const params = [req.body.page || 1];
-    return readProductList(params)
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
+    //let page = req.body.page || 1;
+    let count = req.body.count || 5;
+    return readProductList(count, (err, data) => {
+      if (err) {
         res.sendStatus(500);
         console.log("errFromGetProductsList: ", err);
-      });
+      } else {
+        res.status(200).json(data);
+      }
+    });
   },
+
   getOneProduct: (req, res) => {
     const id = req.params.product_id;
-    return readOneProduct(id)
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
+    return readOneProduct(id, (err, data) => {
+      if (err) {
         res.sendStatus(500);
         console.log("errFromGetOneProduct: ", err);
-      });
+      } else {
+        res.status(200).json(data);
+      }
+    });
   },
+
   getStyles: (req, res) => {
     const id = req.params.product_id;
-    return readStyles(id)
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
+    readStyles(id, (err, data) => {
+      if (err) {
         res.sendStatus(500);
-        console.log("errFromGetProductsList: ", err);
-      });
+        console.log("errFromGetStyles: ", err);
+      } else {
+        res.status(200).json(data);
+      }
+    });
   },
+
   getRelated: (req, res) => {
     const id = req.params.product_id;
-    console.log(req.params)
-    return readRelated(id)
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
+    readRelated(id, (err, data) => {
+      if (err) {
         res.sendStatus(500);
         console.log("errFromGetRelated : ", err);
-      });
+      } else {
+        res.status(200).json(data);
+      }
+    });
   },
 };

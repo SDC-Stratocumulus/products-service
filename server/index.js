@@ -12,7 +12,7 @@ app.use(morgan("dev"));
 app.use(cors());
 app.use("/products", router);
 
-app.get("/", (req, res) => {
+app.get("/products", (req, res) => {
   res.send("Hello World!");
 });
 
