@@ -21,16 +21,16 @@ module.exports = {
   readOneProduct: async (id, callback) => {
     const queryStr1 = `SELECT
     id,
-    product_name,
+    name,
     slogan,
-    product_descr,
+    description,
     category,
     default_price
     FROM products
     WHERE id= $1`;
     const queryStr2 = `SELECT
-    feature_name,
-    feature_value
+    feature,
+    value
     FROM features
     WHERE product_id= $1`;
     const client = await pool.connect();
@@ -40,17 +40,7 @@ module.exports = {
       const promisedData = await Promise.all([productData, featureData]);
       if (promisedData[0].rows) {
         const result = promisedData[0].rows[0];
-        result.name = result.product_name;
-        delete result.product_name;
-        result.description = result.product_descr;
-        delete result.product_descr;
         result.features = promisedData[1].rows;
-        result.features.forEach((e) => {
-          e.feature = e.feature_name;
-          delete e.feature_name;
-          e.value = e.feature_value;
-          delete e.feature_value;
-        });
         callback(null, result);
       }
     } catch (err) {
@@ -64,8 +54,8 @@ module.exports = {
   readStyles: async (id, callback) => {
     const queryStrStyle = `SELECT
     id,
-    style_name,
-    price,
+    name,
+    original_price,
     sale_price,
     default_style
     FROM styles
@@ -73,7 +63,7 @@ module.exports = {
     const queryStrPhotos = `SELECT
     style_id,
     thumbnail_url,
-    full_size_url
+    url
     FROM photos
     JOIN styles
     ON
@@ -94,51 +84,53 @@ module.exports = {
       const photosData = client.query(queryStrPhotos, [id]);
       const skusData = client.query(queryStrSkus, [id]);
       const promisedData = await Promise.all([styleData, photosData, skusData]);
-      if (promisedData[0].rows) {
-        console.log("styleData.rows: ", promisedData[0].rows);
+      const [styles, photos, skus] = promisedData;
+      if (styles.rows) {
         const result = {
           product_id: id,
-          results: promisedData[0].rows,
+          results: styles.rows,
         };
-        let skusByStyle = {};
-        let photosByStyle = {};
-        if (promisedData[1].rows) {
-          for (let i = 0; i < promisedData[1].rows.length; i++) {
-            if (photosByStyle[promisedData[1].rows[i].style_id]) {
-              photosByStyle[promisedData[1].rows[i].style_id].push(
-                promisedData[1].rows[i]
-              );
-            } else {
-              photosByStyle[promisedData[1].rows[i].style_id] = [
-                photosByStyle[promisedData[1].rows[i]],
-              ];
-            }
-          }
-        }
-        if (promisedData[2].rows) {
-          for (let i = 0; i < promisedData[2].rows.length; i++) {
-            if (skusByStyle[promisedData[2].rows[i].style_id]) {
-              skusByStyle[promisedData[2].rows[i].style_id].push(
-                promisedData[1].rows[i]
-              );
-            } else {
-              skusByStyle[promisedData[2].rows[i].style_id] = [
-                skusByStyle[promisedData[2].rows[i]],
-              ];
-            }
-          }
-        }
-        for (let i = 0; i < promisedData[0].rows.length; i++) {
-          if (photosByStyle.hasOwnProperty(promisedData[0].rows[i].id)) {
-            result.results.promisedData[0].rows[i].photos =
-              photosByStyle[promisedData[0].rows[i].id];
-          }
-          if (skusByStyle.hasOwnProperty(promisedData[0].rows[i].id)) {
-            result.results.promisedData[0].rows[i].skus =
-              skusByStyle[promisedData[0].rows[i].id];
-          }
-        }
 
+        const skusByStyle = {};
+        const photosByStyle = {};
+
+        if (photos.rows) {
+          for (let i = 0; i < photos.rows.length; i++) {
+            let id = photos.rows[i].style_id;
+            delete photos.rows[i].style_id;
+            if (photosByStyle[id]) {
+              photosByStyle[id].push(photos.rows[i]);
+            } else {
+              photosByStyle[id] = [photos.rows[i]];
+            }
+          }
+        }
+        if (skus.rows) {
+          for (let i = 0; i < skus.rows.length; i++) {
+            let id = skus.rows[i].style_id;
+            let key = skus.rows[i].size;
+            let value = skus.rows[i].quantity;
+            if (skusByStyle[id]) {
+              skusByStyle[id][key] = value;
+            } else {
+              skusByStyle[id] = {};
+              skusByStyle[id][key] = value;
+            }
+          }
+        }
+        for (let i = 0; i < result.results.length; i++) {
+          result.results[i].style_id =  result.results[i].id
+          delete result.results[i].id
+          result.results[i]['default?']=  result.results[i].default_style
+          delete result.results[i].default_style
+          let id = result.results[i].style_id
+          if (photosByStyle.hasOwnProperty(id)) {
+            result.results[i].photos = photosByStyle[id];
+          }
+          if (skusByStyle.hasOwnProperty(id)) {
+            result.results[i].skus = skusByStyle[id];
+          }
+        }
         callback(null, result);
       }
     } catch (err) {
