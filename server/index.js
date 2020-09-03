@@ -19,3 +19,5 @@ app.get("/products", (req, res) => {
 app.listen(port, () => {
   console.log(`products service app listening at http://localhost:${port}`);
 });
+
+module.exports = app;
